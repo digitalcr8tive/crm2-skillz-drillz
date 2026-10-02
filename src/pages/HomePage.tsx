@@ -67,7 +67,10 @@ export function HomePage() {
               <p className="upcoming-event-location">View the current schedule and ticket details on Eventbrite.</p>
               <div className="upcoming-event-action">
                 <a className="button button--dark" href={upcomingClinic.registrationUrl} target="_blank" rel="noopener noreferrer">
-                  Register on Eventbrite <span aria-hidden="true">↗</span>
+                  Register on Eventbrite
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false" style={{ flexShrink: 0 }}>
+                    <path d="M5 19 19 5M5 5h14v14" />
+                  </svg>
                   <span className="sr-only"> (opens in a new tab)</span>
                 </a>
                 <p>Event details &amp; tickets on Eventbrite</p>
