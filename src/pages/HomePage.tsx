@@ -12,6 +12,13 @@ const pillars = [
   ['iq', 'Game IQ', 'Reads, decision-making, and confidence that separate skilled hoopers.'],
 ]
 
+const upcomingClinic = {
+  title: '2026 Thanksgiving Break Basketball Clinic',
+  registrationUrl: 'https://www.eventbrite.com/e/copy-of-2026-thanksgiving-break-basketball-clinic-tickets-2002809568333?aff=oddtdtcreator',
+  // Retire the promotion after the final clinic day in Little Rock (Central time).
+  endsAt: '2026-11-14T00:00:00-06:00',
+}
+
 function PillarIcon({ type }: { type: string }) {
   if (type === 'handling') {
     return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h3M2 12h4M3 17h3" /><circle cx="15" cy="12" r="6" /><path d="M15 6v12M9 12h12M11 7.5c2 1.5 3 3 3 4.5s-1 3-3 4.5M19 7.5c-2 1.5-3 3-3 4.5s1 3 3 4.5" /></svg>
@@ -47,6 +54,29 @@ export function HomePage() {
             </div>
           </div>
         </section>
+
+        {Date.now() < Date.parse(upcomingClinic.endsAt) && (
+          <section className="upcoming-event" aria-labelledby="upcoming-event-title">
+            <div className="upcoming-event-date" aria-label="November 11 through 13, 2026">
+              <span>November 2026</span>
+              <strong>11–13</strong>
+              <span>10 AM–12 PM · Central</span>
+            </div>
+            <div className="upcoming-event-copy">
+              <p className="upcoming-event-label">Upcoming clinic</p>
+              <h2 id="upcoming-event-title">{upcomingClinic.title}</h2>
+              <p>New to the court or back for more? Join Skillz &amp; Drillz for a basketball clinic in Little Rock.</p>
+              <p className="upcoming-event-location">Calvary Baptist Church · 5700 Cantrell Rd</p>
+            </div>
+            <div className="upcoming-event-action">
+              <a className="button button--dark" href={upcomingClinic.registrationUrl} target="_blank" rel="noopener noreferrer">
+                Register on Eventbrite <span aria-hidden="true">↗</span>
+                <span className="sr-only"> (opens in a new tab)</span>
+              </a>
+              <p>Event details &amp; tickets on Eventbrite</p>
+            </div>
+          </section>
+        )}
 
         <section className="about-section" id="about">
           <div className="about-photo-wrap">
