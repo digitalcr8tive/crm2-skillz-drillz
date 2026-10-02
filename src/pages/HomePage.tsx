@@ -15,8 +15,8 @@ const pillars = [
 const upcomingClinic = {
   title: '2026 Thanksgiving Break Basketball Clinic',
   registrationUrl: 'https://www.eventbrite.com/e/copy-of-2026-thanksgiving-break-basketball-clinic-tickets-2002809568333?aff=oddtdtcreator',
-  // Retire the promotion after the final clinic day in Little Rock (Central time).
-  endsAt: '2026-11-14T00:00:00-06:00',
+  // Retire the promotion after the final day advertised on the event flyer (Central time).
+  endsAt: '2026-11-26T00:00:00-06:00',
 }
 
 function PillarIcon({ type }: { type: string }) {
@@ -57,23 +57,21 @@ export function HomePage() {
 
         {Date.now() < Date.parse(upcomingClinic.endsAt) && (
           <section className="upcoming-event" aria-labelledby="upcoming-event-title">
-            <div className="upcoming-event-date" aria-label="November 11 through 13, 2026">
-              <span>November 2026</span>
-              <strong>11–13</strong>
-              <span>10 AM–12 PM · Central</span>
-            </div>
+            <a className="upcoming-event-banner" href={upcomingClinic.registrationUrl} target="_blank" rel="noopener noreferrer" aria-label="View Thanksgiving basketball clinic details on Eventbrite (opens in a new tab)">
+              <img src={assetPath('assets/thanksgiving-clinic-banner.jpg')} width="1024" height="1536" loading="lazy" decoding="async" alt="CRM2 Skillz & Drillz and Grind Don't Stop Thanksgiving Basketball Clinic flyer: November 23–25, 10 AM–noon, boys and girls ages 7–17, $125 per player." />
+            </a>
             <div className="upcoming-event-copy">
               <p className="upcoming-event-label">Upcoming clinic</p>
               <h2 id="upcoming-event-title">{upcomingClinic.title}</h2>
               <p>New to the court or back for more? Join Skillz &amp; Drillz for a basketball clinic in Little Rock.</p>
-              <p className="upcoming-event-location">Calvary Baptist Church · 5700 Cantrell Rd</p>
-            </div>
-            <div className="upcoming-event-action">
-              <a className="button button--dark" href={upcomingClinic.registrationUrl} target="_blank" rel="noopener noreferrer">
-                Register on Eventbrite <span aria-hidden="true">↗</span>
-                <span className="sr-only"> (opens in a new tab)</span>
-              </a>
-              <p>Event details &amp; tickets on Eventbrite</p>
+              <p className="upcoming-event-location">View the current schedule and ticket details on Eventbrite.</p>
+              <div className="upcoming-event-action">
+                <a className="button button--dark" href={upcomingClinic.registrationUrl} target="_blank" rel="noopener noreferrer">
+                  Register on Eventbrite <span aria-hidden="true">↗</span>
+                  <span className="sr-only"> (opens in a new tab)</span>
+                </a>
+                <p>Event details &amp; tickets on Eventbrite</p>
+              </div>
             </div>
           </section>
         )}
