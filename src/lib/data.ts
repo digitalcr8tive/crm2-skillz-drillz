@@ -1,3 +1,6 @@
+import { isTrainingDay } from './trainingSchedule'
+export { isTrainingDay } from './trainingSchedule'
+
 import { isDemo, supabase, bookingUnavailableMessage } from './supabase'
 
 export type EmailNotifications = {
@@ -32,11 +35,6 @@ export type Booking = {
   balanceDue: number
   paymentDueDate: string
   notifications?: EmailNotifications
-}
-
-export const isTrainingDay = (value: string | Date) => {
-  const day = new Intl.DateTimeFormat('en-US', { weekday: 'short', timeZone: 'America/Chicago' }).format(new Date(value))
-  return day !== 'Wed' && day !== 'Fri'
 }
 
 const buildDemoSlots = (): Slot[] => {
@@ -74,7 +72,7 @@ export async function getAvailableSlots(): Promise<Slot[]> {
     startsAt: slot.starts_at,
     durationMinutes: slot.duration_minutes,
     spotsLeft: Math.max(slot.capacity - slot.booked_count, 0),
-  })).filter((slot) => isTrainingDay(slot.startsAt))
+  })).filter((slot) => isTrainingDay(slot.startsAt) && slot.spotsLeft > 0)
 }
 
 export async function createSignup(payload: SignupPayload): Promise<SignupResult> {

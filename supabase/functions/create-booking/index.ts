@@ -32,7 +32,7 @@ Deno.serve(async (request) => {
       .select('starts_at').eq('id', payload.slotId).eq('is_open', true)
       .gt('starts_at', new Date().toISOString()).single()
     if (slotError || !slot) throw new Error('This training time is no longer available.')
-    const { error: reserveError } = await admin.rpc('reserve_slot', { target_slot: payload.slotId })
+    const { error: reserveError } = await admin.rpc('reserve_slot', { target_slot: payload.slotId, athletes: payload.athleteCount })
     if (reserveError) throw new Error('This training time is no longer available.')
     const { data: booking, error } = await admin.from('bookings').insert({
       slot_id: payload.slotId,
@@ -44,7 +44,7 @@ Deno.serve(async (request) => {
       notes: payload.notes || null,
     }).select('id,parent_name,phone,email,athlete_age,athlete_count,notes').single()
     if (error) {
-      const { error: releaseError } = await admin.rpc('release_slot', { target_slot: payload.slotId })
+      const { error: releaseError } = await admin.rpc('release_slot', { target_slot: payload.slotId, athletes: payload.athleteCount })
       if (releaseError) console.error('Reservation release failed', { slotId: payload.slotId })
       throw new Error('Your request could not be saved. Please contact CRM2 before paying a deposit.')
     }

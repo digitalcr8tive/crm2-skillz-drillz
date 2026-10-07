@@ -49,3 +49,9 @@ npm run build:pages
 ```
 
 The email tests mock the database and provider and send no real emails. Production delivery still requires the live setup and inbox checks above.
+
+## Weekly training schedule
+
+Apply `supabase/migrations/202610070002_weekly_training_schedule.sql` after the base schema. Availability is Monday–Thursday, 3–4, 4–5, 5–6, and 6–7 p.m. America/Chicago, with 12 athletes per hour. The private daily Supabase Cron job maintains 12 weeks of future slots; Central daylight saving is handled by PostgreSQL. Group bookings reserve each athlete atomically. Close exceptions with `is_open = false`; the refresh preserves existing slot rows and closures. Do not delete recurring rows to close a date, because the refresh recreates missing rows.
+
+Verify with `node scripts/test-training-schedule.mjs` and `npm run test:booking-emails`.

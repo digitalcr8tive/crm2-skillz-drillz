@@ -20,11 +20,12 @@ Deno.serve(async (request) => {
     const payload = await request.json()
 
     if (payload.action === 'cancel') {
-      const { data: existing } = await admin.from('bookings').select('slot_id').eq('id', payload.bookingId).eq('user_id', user.id).single()
-      if (!existing) throw new Error('Booking not found.')
-      const { error } = await admin.from('bookings').update({ status: 'cancelled', updated_at: new Date().toISOString() }).eq('id', payload.bookingId).eq('user_id', user.id)
+      const { data: existing, error } = await admin.from('bookings')
+        .update({ status: 'cancelled', updated_at: new Date().toISOString() })
+        .eq('id', payload.bookingId).eq('user_id', user.id).neq('status', 'cancelled')
+        .select('slot_id,athlete_count').maybeSingle()
       if (error) throw error
-      await admin.rpc('release_slot', { target_slot: existing.slot_id })
+      if (existing) await admin.rpc('release_slot', { target_slot: existing.slot_id, athletes: existing.athlete_count })
       return Response.json({ ok: true }, { headers: cors })
     }
 
