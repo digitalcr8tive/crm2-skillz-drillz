@@ -1,12 +1,15 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { emailConfig, sendBookingEmails } from '../_shared/booking-emails.ts'
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
 Deno.serve(async (request) => {
   if (request.method === 'OPTIONS') return new Response('ok', { headers: cors })
+  if (request.method !== 'POST') return Response.json({ error: 'Method not allowed' }, { status: 405, headers: cors })
   try {
     const authHeader = request.headers.get('Authorization')
     if (!authHeader) throw new Error('Please log in again.')
@@ -26,10 +29,13 @@ Deno.serve(async (request) => {
     }
 
     if (payload.action === 'book') {
+      const config = emailConfig((name) => Deno.env.get(name))
       const { data: profile } = await admin.from('profiles').select('*').eq('id', user.id).single()
       if (!profile) throw new Error('Your member profile needs to be completed by CRM2.')
-      await admin.rpc('reserve_slot', { target_slot: payload.slotId })
-      const { data: slot } = await admin.from('training_slots').select('starts_at').eq('id', payload.slotId).single()
+      const { data: slot, error: slotError } = await admin.from('training_slots').select('starts_at').eq('id', payload.slotId).eq('is_open', true).gt('starts_at', new Date().toISOString()).single()
+      if (slotError || !slot) throw new Error('This training time is no longer available.')
+      const { error: reserveError } = await admin.rpc('reserve_slot', { target_slot: payload.slotId })
+      if (reserveError) throw new Error('This training time is no longer available.')
       const { data, error } = await admin.from('bookings').insert({
         slot_id: payload.slotId,
         user_id: user.id,
@@ -37,12 +43,15 @@ Deno.serve(async (request) => {
         phone: profile.phone,
         email: user.email,
         athlete_age: profile.athlete_age,
-      }).select('id,status,balance_due').single()
+      }).select('id,status,balance_due,parent_name,phone,email,athlete_age,athlete_count,notes').single()
       if (error) {
         await admin.rpc('release_slot', { target_slot: payload.slotId })
         throw error
       }
-      return Response.json({ id: data.id, startsAt: slot.starts_at, status: data.status, balanceDue: data.balance_due, paymentDueDate: slot.starts_at }, { headers: cors })
+      const notifications = await sendBookingEmails({ ...data, starts_at: slot.starts_at }, config)
+      const { error: logError } = await admin.from('bookings').update({ email_notifications: notifications }).eq('id', data.id)
+      if (logError) console.error('Email status could not be saved', { bookingId: data.id })
+      return Response.json({ notifications, id: data.id, startsAt: slot.starts_at, status: data.status, balanceDue: data.balance_due, paymentDueDate: slot.starts_at }, { headers: cors })
     }
     throw new Error('Unknown booking action.')
   } catch (error) {

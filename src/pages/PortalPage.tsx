@@ -13,6 +13,7 @@ export function PortalPage() {
   const [booking, setBooking] = useState<Booking | null>(null)
   const [notice, setNotice] = useState('')
   const [showCalendar, setShowCalendar] = useState(false)
+  const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     Promise.all([getAvailableSlots(), getMemberDashboard()])
@@ -25,11 +26,19 @@ export function PortalPage() {
 
   const reserve = async () => {
     if (!selected) return setNotice('Choose an open time first.')
-    const result = await bookMemberSlot(selected)
-    setBooking(result)
-    setShowCalendar(false)
-    setNotice('Your new time was submitted. Pay the $25 deposit to reserve it.')
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+    setSaving(true)
+    try {
+      const result = await bookMemberSlot(selected)
+      setBooking(result)
+      setShowCalendar(false)
+      const emailAccepted = result.notifications?.customer.status === 'accepted' && result.notifications?.owner.status === 'accepted'
+      setNotice(emailAccepted ? 'Your new time was submitted, and confirmation emails were submitted to you and CRM2. Pay the $25 deposit to reserve it.' : 'Your request was saved, but email confirmation is unavailable. Please contact crm2skillzanddrillz@gmail.com before paying. Do not submit the request again.')
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    } catch (reason) {
+      setNotice(reason instanceof Error ? reason.message : 'Your request could not be saved. Please contact CRM2 before paying.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   const cancel = async () => {
@@ -76,7 +85,7 @@ export function PortalPage() {
 
         <section className={`portal-calendar ${showCalendar ? 'portal-calendar--open' : ''}`}>
           <div className="portal-section-heading"><div><p className="portal-label">Training calendar</p><h2>Choose an open time</h2></div>{!showCalendar && <button className="button button--dark" type="button" onClick={() => setShowCalendar(true)}>View calendar</button>}</div>
-          {showCalendar && <><SlotPicker slots={slots} selectedId={selected?.id ?? ''} onSelect={setSelected} /><div className="calendar-actions"><button className="button button--orange" type="button" onClick={reserve}>Submit selected time</button><button className="text-button" type="button" onClick={() => setShowCalendar(false)}>Close calendar</button></div></>}
+          {showCalendar && <><SlotPicker slots={slots} selectedId={selected?.id ?? ''} onSelect={setSelected} /><div className="calendar-actions"><button className="button button--orange" type="button" onClick={reserve} disabled={saving}>{saving ? 'Saving…' : 'Submit selected time'}</button><button className="text-button" type="button" onClick={() => setShowCalendar(false)}>Close calendar</button></div></>}
         </section>
 
         <PolicyNotice />

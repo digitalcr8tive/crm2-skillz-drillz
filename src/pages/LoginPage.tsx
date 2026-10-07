@@ -2,7 +2,7 @@ import { FormEvent, type CSSProperties, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { SiteHeader } from '../components/SiteHeader'
 import { assetPath } from '../lib/assets'
-import { hasSupabase } from '../lib/supabase'
+import { isDemo } from '../lib/supabase'
 import { signIn } from '../lib/data'
 
 export function LoginPage() {
@@ -43,7 +43,7 @@ export function LoginPage() {
           <label className="field"><span>Password</span><input required type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} /></label>
           {error && <p className="form-error" role="alert">{error}</p>}
           <button className="button button--orange" type="submit" disabled={loading}>{loading ? 'Logging in…' : 'Log in to portal'}</button>
-          {!hasSupabase && <button className="demo-login" type="button" onClick={fillDemo}>Use demo login: demo@crm2.com / trainhard</button>}
+          {isDemo && <button className="demo-login" type="button" onClick={fillDemo}>Use demo login: demo@crm2.com / trainhard</button>}
           <p>New to CRM2? <Link to="/signup">Book your first training</Link>.</p>
         </form>
       </main>
