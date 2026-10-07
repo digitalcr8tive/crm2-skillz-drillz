@@ -228,7 +228,7 @@ p { text-wrap: pretty; }
 .booking-summary div { display: flex; justify-content: space-between; gap: 20px; padding: 12px 0; border-bottom: 1px solid var(--line); }
 .booking-summary div:last-child { border-bottom: 0; }
 .booking-summary dt { color: var(--muted); }
-.booking-summary dd { margin: 0; font-weight: 600; }
+.booking-summary dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; text-align: right; min-width: 0; }
 .confirmation-card .button { width: 100%; }
 .confirmation-note { margin: 20px auto; max-width: 560px; color: var(--muted); font-size: .92rem; }
 

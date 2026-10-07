@@ -35,6 +35,7 @@ create table if not exists public.bookings (
   deposit_amount numeric(8,2) not null default 25,
   balance_due numeric(8,2) not null default 25,
   deposit_received_at timestamptz,
+  email_notifications jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -86,13 +87,18 @@ as $$
   where id = target_slot;
 $$;
 
--- Starter availability. Replace these with dates managed from the Supabase table editor.
-insert into public.training_slots (starts_at, capacity)
-select date_trunc('day', now()) + interval '3 days 17 hours', 4
-where not exists (select 1 from public.training_slots);
-insert into public.training_slots (starts_at, capacity)
-select date_trunc('day', now()) + interval '5 days 10 hours', 4
-where (select count(*) from public.training_slots) = 1;
-insert into public.training_slots (starts_at, capacity)
-select date_trunc('day', now()) + interval '7 days 18 hours', 6
-where (select count(*) from public.training_slots) = 2;
+-- Slot counters are managed only by the server-side booking functions.
+revoke execute on function public.reserve_slot(uuid) from public, anon, authenticated;
+revoke execute on function public.release_slot(uuid) from public, anon, authenticated;
+grant execute on function public.reserve_slot(uuid) to service_role;
+grant execute on function public.release_slot(uuid) to service_role;
+
+-- Starter availability for setup only. Staff must replace it with approved session times.
+-- Filter excluded weekdays before inserting to satisfy the training-day constraint.
+insert into public.training_slots (starts_at, capacity, is_open)
+select ((current_date + day_offset) + time '17:00') at time zone 'America/Chicago', 4, false
+from generate_series(1, 14) as days(day_offset)
+where extract(dow from current_date + day_offset) not in (3, 5)
+  and not exists (select 1 from public.training_slots)
+order by day_offset
+limit 3;

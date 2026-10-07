@@ -1,4 +1,11 @@
-import { hasSupabase, supabase } from './supabase'
+import { isDemo, supabase, bookingUnavailableMessage } from './supabase'
+
+export type EmailNotifications = {
+  customer: { status: 'accepted' | 'failed'; providerId?: string }
+  owner: { status: 'accepted' | 'failed'; providerId?: string }
+}
+
+export type SignupResult = { id: string; notifications?: EmailNotifications; demo?: boolean }
 
 export type Slot = {
   id: string
@@ -24,11 +31,12 @@ export type Booking = {
   status: 'pending_deposit' | 'confirmed' | 'cancelled'
   balanceDue: number
   paymentDueDate: string
+  notifications?: EmailNotifications
 }
 
 export const isTrainingDay = (value: string | Date) => {
-  const day = new Date(value).getDay()
-  return day !== 3 && day !== 5
+  const day = new Intl.DateTimeFormat('en-US', { weekday: 'short', timeZone: 'America/Chicago' }).format(new Date(value))
+  return day !== 'Wed' && day !== 'Fri'
 }
 
 const buildDemoSlots = (): Slot[] => {
@@ -52,7 +60,8 @@ const buildDemoSlots = (): Slot[] => {
 export const demoSlots = buildDemoSlots()
 
 export async function getAvailableSlots(): Promise<Slot[]> {
-  if (!hasSupabase || !supabase) return demoSlots
+  if (isDemo) return demoSlots
+  if (!supabase) throw new Error(bookingUnavailableMessage)
   const { data, error } = await supabase
     .from('training_slots')
     .select('id,starts_at,duration_minutes,capacity,booked_count')
@@ -68,24 +77,27 @@ export async function getAvailableSlots(): Promise<Slot[]> {
   })).filter((slot) => isTrainingDay(slot.startsAt))
 }
 
-export async function createSignup(payload: SignupPayload) {
-  if (!hasSupabase || !supabase) {
+export async function createSignup(payload: SignupPayload): Promise<SignupResult> {
+  if (isDemo) {
     localStorage.setItem('crm2-last-signup', JSON.stringify(payload))
-    return { id: `demo-${Date.now()}` }
+    return { id: `demo-${Date.now()}`, demo: true }
   }
+  if (!supabase) throw new Error(bookingUnavailableMessage)
   const { data, error } = await supabase.functions.invoke('create-booking', { body: payload })
   if (error) throw error
+  if (!data?.id) throw new Error(data?.error || 'We could not save your request. Please contact CRM2 before paying a deposit.')
   return data
 }
 
 export async function signIn(email: string, password: string) {
-  if (!hasSupabase || !supabase) {
+  if (isDemo) {
     if (email.toLowerCase() !== 'demo@crm2.com' || password !== 'trainhard') {
       throw new Error('Use the demo login shown below, or connect Supabase for live member accounts.')
     }
     localStorage.setItem('crm2-demo-auth', 'true')
     return
   }
+  if (!supabase) throw new Error(bookingUnavailableMessage)
   const { error } = await supabase.auth.signInWithPassword({ email, password })
   if (error) throw error
 }
@@ -110,7 +122,7 @@ export function demoBooking(): Booking | null {
 }
 
 export async function bookMemberSlot(slot: Slot): Promise<Booking> {
-  if (!hasSupabase || !supabase) {
+  if (isDemo) {
     const booking: Booking = {
       id: `demo-${Date.now()}`,
       startsAt: slot.startsAt,
@@ -122,6 +134,7 @@ export async function bookMemberSlot(slot: Slot): Promise<Booking> {
     localStorage.removeItem('crm2-demo-cancelled')
     return booking
   }
+  if (!supabase) throw new Error(bookingUnavailableMessage)
   const { data, error } = await supabase.functions.invoke('member-booking', {
     body: { action: 'book', slotId: slot.id },
   })
@@ -130,11 +143,12 @@ export async function bookMemberSlot(slot: Slot): Promise<Booking> {
 }
 
 export async function cancelMemberBooking(bookingId: string) {
-  if (!hasSupabase || !supabase) {
+  if (isDemo) {
     localStorage.removeItem('crm2-demo-booking')
     localStorage.setItem('crm2-demo-cancelled', 'true')
     return
   }
+  if (!supabase) throw new Error(bookingUnavailableMessage)
   const { error } = await supabase.functions.invoke('member-booking', {
     body: { action: 'cancel', bookingId },
   })
@@ -142,7 +156,8 @@ export async function cancelMemberBooking(bookingId: string) {
 }
 
 export async function getMemberDashboard(): Promise<{ name: string; booking: Booking | null }> {
-  if (!hasSupabase || !supabase) return { name: 'Jordan', booking: demoBooking() }
+  if (isDemo) return { name: 'Jordan', booking: demoBooking() }
+  if (!supabase) throw new Error(bookingUnavailableMessage)
   const { data: { session } } = await supabase.auth.getSession()
   if (!session) throw new Error('Please log in to view your member portal.')
   const [{ data: profile }, { data: rawBooking, error }] = await Promise.all([
@@ -176,6 +191,7 @@ export const formatDate = (value: string) =>
     month: 'short',
     day: 'numeric',
     year: 'numeric',
+    timeZone: 'America/Chicago',
   }).format(new Date(value))
 
 export const formatTime = (value: string) =>
@@ -183,6 +199,7 @@ export const formatTime = (value: string) =>
     hour: 'numeric',
     minute: '2-digit',
     timeZoneName: 'short',
+    timeZone: 'America/Chicago',
   }).format(new Date(value))
 
 export const venmoUrl = (amount: number, note: string) =>
