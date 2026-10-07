@@ -12,9 +12,9 @@ create table if not exists public.profiles (
 
 create table if not exists public.training_slots (
   id uuid primary key default gen_random_uuid(),
-  starts_at timestamptz not null check (extract(dow from starts_at at time zone 'America/Chicago') not in (3, 5)),
+  starts_at timestamptz not null check (extract(dow from starts_at at time zone 'America/Chicago') between 1 and 4),
   duration_minutes integer not null default 60 check (duration_minutes between 30 and 180),
-  capacity integer not null default 4 check (capacity > 0),
+  capacity integer not null default 12 check (capacity > 0),
   booked_count integer not null default 0 check (booked_count >= 0),
   is_open boolean not null default true,
   location text not null default 'Little Rock, Arkansas',
@@ -96,9 +96,9 @@ grant execute on function public.release_slot(uuid) to service_role;
 -- Starter availability for setup only. Staff must replace it with approved session times.
 -- Filter excluded weekdays before inserting to satisfy the training-day constraint.
 insert into public.training_slots (starts_at, capacity, is_open)
-select ((current_date + day_offset) + time '17:00') at time zone 'America/Chicago', 4, false
+select ((current_date + day_offset) + time '17:00') at time zone 'America/Chicago', 12, false
 from generate_series(1, 14) as days(day_offset)
-where extract(dow from current_date + day_offset) not in (3, 5)
+where extract(dow from current_date + day_offset) between 1 and 4
   and not exists (select 1 from public.training_slots)
 order by day_offset
 limit 3;

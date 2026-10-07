@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
-import { formatTime, isTrainingDay, type Slot } from '../lib/data'
+import { formatTime, type Slot } from '../lib/data'
+import { isTrainingDate, trainingDateKey } from '../lib/trainingSchedule'
 
 type Props = {
   slots: Slot[]
@@ -16,13 +17,13 @@ const monthLabel = new Intl.DateTimeFormat('en-US', { month: 'long', year: 'nume
 const fullDateLabel = new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
 
 export function CalendarPicker({ slots, selectedId, onSelect }: Props) {
-  const firstSlot = slots[0] ? new Date(slots[0].startsAt) : new Date()
+  const firstSlot = new Date(`${trainingDateKey(slots[0]?.startsAt ?? new Date())}T12:00:00`)
   const [month, setMonth] = useState(() => new Date(firstSlot.getFullYear(), firstSlot.getMonth(), 1))
   const selectedSlot = slots.find((slot) => slot.id === selectedId)
-  const [selectedDate, setSelectedDate] = useState(() => selectedSlot ? dateKey(selectedSlot.startsAt) : '')
+  const [selectedDate, setSelectedDate] = useState(() => selectedSlot ? trainingDateKey(selectedSlot.startsAt) : '')
 
   const slotsByDate = useMemo(() => slots.reduce<Record<string, Slot[]>>((grouped, slot) => {
-    const key = dateKey(slot.startsAt)
+    const key = trainingDateKey(slot.startsAt)
     grouped[key] = [...(grouped[key] ?? []), slot]
     return grouped
   }, {}), [slots])
@@ -49,6 +50,7 @@ export function CalendarPicker({ slots, selectedId, onSelect }: Props) {
         <strong>{monthLabel.format(month)}</strong>
         <button type="button" onClick={() => changeMonth(1)} aria-label="Next month">→</button>
       </div>
+      <p>Monday–Thursday · 3–7 p.m. Central · One-hour sessions</p>
       <div className="calendar-legend"><span><i className="calendar-key calendar-key--open" /> Open</span><span><i className="calendar-key calendar-key--closed" /> No training</span></div>
       <div className="calendar-weekdays" aria-hidden="true">
         {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => <span key={day}>{day}</span>)}
@@ -58,8 +60,8 @@ export function CalendarPicker({ slots, selectedId, onSelect }: Props) {
           if (!date) return <span className="calendar-day calendar-day--blank" key={`blank-${index}`} />
           const key = dateKey(date)
           const daySlots = slotsByDate[key] ?? []
-          const closed = !isTrainingDay(date)
-          const inPast = date < new Date(new Date().setHours(0, 0, 0, 0))
+          const closed = !isTrainingDate(key)
+          const inPast = key < trainingDateKey(new Date())
           const available = !closed && !inPast && daySlots.length > 0
           const classes = ['calendar-day', closed ? 'calendar-day--closed' : '', available ? 'calendar-day--available' : '', selectedDate === key ? 'calendar-day--selected' : ''].filter(Boolean).join(' ')
 

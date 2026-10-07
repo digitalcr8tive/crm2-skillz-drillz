@@ -56,7 +56,7 @@ async function runHandler({ configured = true, reserveError = null, mailStatus =
   let handler
   const calls = []
   const admin = {
-    rpc: async (name) => { calls.push(name); return { error: reserveError } },
+    rpc: async (name, args) => { if (name === 'reserve_slot') assert.deepEqual(args, { target_slot: payload.slotId, athletes: payload.athleteCount }); calls.push(name); return { error: reserveError } },
     from(table) {
       const query = {
         select() { return query }, eq() { return query }, gt() { return query },
